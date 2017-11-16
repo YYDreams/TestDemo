@@ -8,7 +8,9 @@
 
 #import "ViewController.h"
 #import "JYShopCell.h"
+
 @interface ViewController ()
+@property (strong, nonatomic) NSIndexPath* editingIndexPath;  //当前左滑cell的index，在代理方法中设置
 
 @end
 static NSString *JYShopCellID = @"JYShopCellID";
@@ -25,16 +27,62 @@ static NSString *JYShopCellID = @"JYShopCellID";
     
     [self setupTableView];
 }
+#pragma mark - viewDidLayoutSubviews
+- (void)viewDidLayoutSubviews{
+    [super viewDidLayoutSubviews];
+    
+    if (self.editingIndexPath){
+        [self configSwipeButtons];
+    }
+}
+#pragma mark - configSwipeButtons
+- (void)configSwipeButtons{
+    // 获取选项按钮的reference
+    if (@available(iOS 11.0, *)){
+    
+        // iOS 11层级 (Xcode 9编译): UITableView -> UISwipeActionPullView
+        for (UIView *subview in self.tableView.subviews)
+        {
+            NSLog(@"%@-----%zd",subview,subview.subviews.count);
+            if ([subview isKindOfClass:NSClassFromString(@"UISwipeActionPullView")] && [subview.subviews count] >= 1)
+            {
+                // 和iOS 10的按钮顺序相反
+                UIButton *deleteButton = subview.subviews[0];
+                [self configDeleteButton:deleteButton];
+            }
+        }
+    }
+    else{
+        // iOS 8-10层级 (Xcode 8编译): UITableView -> UITableViewCell -> UITableViewCellDeleteConfirmationView
+        JYShopCell *tableCell = [self.tableView cellForRowAtIndexPath:self.editingIndexPath];
+        for (UIView *subview in tableCell.subviews){
+            NSLog(@"subview%@-----%zd",subview,subview.subviews.count);
+            
+            if ([subview isKindOfClass:NSClassFromString(@"UITableViewCellDeleteConfirmationView")] && [subview.subviews count] >= 1)
+            {
+                UIButton *deleteButton = subview.subviews[0];
+                [self configDeleteButton:deleteButton];
+            }
+        }
+    }
+}
+
+- (void)configDeleteButton:(UIButton*)deleteButton{
+    if (deleteButton) {
+        [deleteButton setImage:[UIImage imageNamed:@"list_deleting"] forState:UIControlStateNormal];
+        [deleteButton setBackgroundColor:[UIColor colorWithHexString:@"F2F2F2"]];
+
+    }
+}
+
 
 #pragma mark - setupTableView
 - (void)setupTableView{
     
-
     [self.tableView registerNib:[UINib nibWithNibName:@"JYShopCell" bundle:nil] forCellReuseIdentifier:JYShopCellID];
     self.tableView.rowHeight = 140;
 
 }
-
 #pragma mark - <UITableViewDataSource>
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section{
     
@@ -57,24 +105,24 @@ static NSString *JYShopCellID = @"JYShopCellID";
    return cell;
     
 }
-- (UITableViewCellEditingStyle)tableView:(UITableView *)tableView editingStyleForRowAtIndexPath:(NSIndexPath *)indexPath {
-    return UITableViewCellEditingStyleDelete;
+
+- (void)tableView:(UITableView *)tableView willBeginEditingRowAtIndexPath:(NSIndexPath *)indexPath{
+    self.editingIndexPath = indexPath;
+    [self.view setNeedsLayout];   // 触发-(void)viewDidLayoutSubviews
 }
 
-- (void)tableView:(UITableView *)tableView commitEditingStyle:(UITableViewCellEditingStyle)editingStyle forRowAtIndexPath:(NSIndexPath *)indexPath {
+- (void)tableView:(UITableView *)tableView didEndEditingRowAtIndexPath:(NSIndexPath *)indexPath{
     
-    UITableViewCell *cell = [tableView cellForRowAtIndexPath:indexPath];
-    
-    for (UIView * view in cell.subviews) {
-                NSLog(@"%@", view);
-        
-        if ([view isKindOfClass:NSClassFromString(@"UITableViewCellDeleteConfirmationView")]) {
-            NSLog(@"%zd",indexPath.row);
-         
-            
-        }
-    }
+    self.editingIndexPath = nil;
 }
 
+- (NSArray*)tableView:(UITableView *)tableView editActionsForRowAtIndexPath:(nonnull NSIndexPath *)indexPath{
+    //title不设为nil 而是空字符串 理由为啥 ？   自己实践 跑到ios11以下的机器上就知道为啥了
+    UITableViewRowAction *deleteAction = [UITableViewRowAction rowActionWithStyle:UITableViewRowActionStyleNormal title:@"        " handler:^(UITableViewRowAction *action, NSIndexPath *indexPath){
+        NSLog(@"哈哈哈哈");
+        [tableView setEditing:NO animated:YES];  // 这句很重要，退出编辑模式，隐藏左滑菜单
+    }];
+    return @[deleteAction];
+}
 
 @end

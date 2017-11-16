@@ -29,28 +29,29 @@
     self.bordView.layer.borderColor = [UIColor colorWithHexString:@"F2F2F2"].CGColor;
 }
 
-- (void)insertSubview:(UIView *)view atIndex:(NSInteger)index {
-    [super insertSubview:view atIndex:index];
-    
-    if ([view isKindOfClass:NSClassFromString(@"UITableViewCellDeleteConfirmationView")]) {
-        view.top = 10;
-        view.height = self.height - 10;
-        
-        for (UIButton *btn in view.subviews) {
-            
-            if ([btn isKindOfClass:[UIButton class]]) {
-                
-                [btn setBackgroundColor:[UIColor colorWithHexString:@"F2F2F2"]];
-                
-                [btn setTitle:nil forState:UIControlStateNormal];
-                
-                [btn setImage:[UIImage imageNamed:@"list_deleting"] forState:UIControlStateNormal];
-                
-                [btn setTintColor:[UIColor whiteColor]];
-            }
-        }
-    }
-}
+//ios11该方法失效 
+//- (void)insertSubview:(UIView *)view atIndex:(NSInteger)index {
+//    [super insertSubview:view atIndex:index];
+//
+//    if ([view isKindOfClass:NSClassFromString(@"UITableViewCellDeleteConfirmationView")]) {
+//        view.top = 10;
+//        view.height = self.height - 10;
+//
+//        for (UIButton *btn in view.subviews) {
+//
+//            if ([btn isKindOfClass:[UIButton class]]) {
+//
+//                [btn setBackgroundColor:[UIColor colorWithHexString:@"F2F2F2"]];
+//
+//                [btn setTitle:nil forState:UIControlStateNormal];
+//
+//                [btn setImage:[UIImage imageNamed:@"list_deleting"] forState:UIControlStateNormal];
+//
+//                [btn setTintColor:[UIColor whiteColor]];
+//            }
+//        }
+//    }
+//}
 
 
 - (void)setSelected:(BOOL)selected animated:(BOOL)animated {
