@@ -10,7 +10,6 @@
 #import "JYShopCell.h"
 
 @interface ViewController ()
-@property (strong, nonatomic) NSIndexPath* editingIndexPath;  //当前左滑cell的index，在代理方法中设置
 
 @end
 static NSString *JYShopCellID = @"JYShopCellID";
@@ -27,54 +26,58 @@ static NSString *JYShopCellID = @"JYShopCellID";
     
     [self setupTableView];
 }
-#pragma mark - viewDidLayoutSubviews
-- (void)viewDidLayoutSubviews{
-    [super viewDidLayoutSubviews];
-    
-    if (self.editingIndexPath){
-        [self configSwipeButtons];
-    }
-}
-#pragma mark - configSwipeButtons
-- (void)configSwipeButtons{
-    // 获取选项按钮的reference
-    if (@available(iOS 11.0, *)){
-    
-        // iOS 11层级 (Xcode 9编译): UITableView -> UISwipeActionPullView
-        for (UIView *subview in self.tableView.subviews)
-        {
-            NSLog(@"%@-----%zd",subview,subview.subviews.count);
-            if ([subview isKindOfClass:NSClassFromString(@"UISwipeActionPullView")] && [subview.subviews count] >= 1)
-            {
-                // 和iOS 10的按钮顺序相反
-                UIButton *deleteButton = subview.subviews[0];
-                [self configDeleteButton:deleteButton];
+
+//MARK: 设置左滑按钮的样式
+- (void)setupSlideBtnWithEditingIndexPath:(NSIndexPath *)editingIndexPath {
+
+    // 判断系统是否是 iOS13 及以上版本
+    if (@available(iOS 13.0, *)) {
+        for (UIView *subView in self.tableView.subviews) {
+            if ([subView isKindOfClass:NSClassFromString(@"_UITableViewCellSwipeContainerView")] && [subView.subviews count] >= 1) {
+                // 修改图片
+                UIView *remarkContentView = subView.subviews.firstObject;
+                [self setupRowActionView:remarkContentView];
             }
         }
+        return;
     }
-    else{
-        // iOS 8-10层级 (Xcode 8编译): UITableView -> UITableViewCell -> UITableViewCellDeleteConfirmationView
-        JYShopCell *tableCell = [self.tableView cellForRowAtIndexPath:self.editingIndexPath];
-        for (UIView *subview in tableCell.subviews){
-            NSLog(@"subview%@-----%zd",subview,subview.subviews.count);
-            
-            if ([subview isKindOfClass:NSClassFromString(@"UITableViewCellDeleteConfirmationView")] && [subview.subviews count] >= 1)
-            {
-                UIButton *deleteButton = subview.subviews[0];
-                [self configDeleteButton:deleteButton];
+    
+    // 判断系统是否是 iOS11 及以上版本
+    if (@available(iOS 11.0, *)) {
+        for (UIView *subView in self.tableView.subviews) {
+            if ([subView isKindOfClass:NSClassFromString(@"UISwipeActionPullView")] && [subView.subviews count] >= 1) {
+                // 修改图片
+                UIView *remarkContentView = subView;
+                [self setupRowActionView:remarkContentView];
             }
+        }
+        return;
+    }
+    
+    // iOS11 以下的版本
+    JYShopCell *cell = [self.tableView cellForRowAtIndexPath:editingIndexPath];
+    for (UIView *subView in cell.subviews) {
+        if ([subView isKindOfClass:NSClassFromString(@"UITableViewCellDeleteConfirmationView")] && [subView.subviews count] >= 1) {
+            // 修改图片
+            UIView *remarkContentView = subView;
+            [self setupRowActionView:remarkContentView];
         }
     }
 }
 
-- (void)configDeleteButton:(UIButton*)deleteButton{
-    if (deleteButton) {
-        [deleteButton setImage:[UIImage imageNamed:@"list_deleting"] forState:UIControlStateNormal];
-        [deleteButton setBackgroundColor:[UIColor colorWithHexString:@"F2F2F2"]];
-
-    }
+- (void)setupRowActionView:(UIView *)rowActionView {
+    // 切割圆角
+//    [rowActionView cl_setCornerAllRadiusWithRadiu:20];
+    // 改变父 View 的frame，这句话是因为我在 contentView 里加了另一个 View，为了使划出的按钮能与其达到同一高度
+    CGRect frame = rowActionView.frame;
+    frame.origin.y += (7);
+    frame.size.height -= (13);
+    rowActionView.frame = frame;
+    // 拿到按钮,设置
+    UIButton *button = rowActionView.subviews.firstObject;
+    [button setImage:[UIImage imageNamed:@"list_deleting"]  forState:UIControlStateNormal];
+    [button setTitle:@"" forState:UIControlStateNormal];
 }
-
 
 #pragma mark - setupTableView
 - (void)setupTableView{
@@ -107,14 +110,12 @@ static NSString *JYShopCellID = @"JYShopCellID";
 }
 
 - (void)tableView:(UITableView *)tableView willBeginEditingRowAtIndexPath:(NSIndexPath *)indexPath{
-    self.editingIndexPath = indexPath;
-    [self.view setNeedsLayout];   // 触发-(void)viewDidLayoutSubviews
+    dispatch_async(dispatch_get_main_queue(), ^{
+          [self setupSlideBtnWithEditingIndexPath:indexPath];
+      });
 }
 
-- (void)tableView:(UITableView *)tableView didEndEditingRowAtIndexPath:(NSIndexPath *)indexPath{
-    
-    self.editingIndexPath = nil;
-}
+
 
 - (NSArray*)tableView:(UITableView *)tableView editActionsForRowAtIndexPath:(nonnull NSIndexPath *)indexPath{
     //title不设为nil 而是空字符串 理由为啥 ？   自己实践 跑到ios11以下的机器上就知道为啥了
